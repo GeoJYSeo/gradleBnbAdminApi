@@ -48,6 +48,6 @@ public class Vacancy {
 
     private LocalDateTime updatedAt;
 
-    @ManyToOne
+    @OneToOne
     private Accommodation accommodation;
 }

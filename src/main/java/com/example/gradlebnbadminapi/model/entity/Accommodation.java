@@ -1,5 +1,6 @@
 package com.example.gradlebnbadminapi.model.entity;
 
+import com.example.gradlebnbadminapi.model.enumClass.IsSetUpForGuest;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.DynamicInsert;
@@ -47,11 +48,16 @@ public class Accommodation {
     @NotBlank
     private String buildingType;
 
+    @NotBlank
+    private String roomType;
+
     @NotNull
     private int maximumGuestCount;
 
+    private IsSetUpForGuest isSetUpForGuest;
+
     @NotNull
-    private int count;
+    private int roomCount;
 
     @NotBlank
     private String description;
@@ -67,12 +73,12 @@ public class Accommodation {
     @OneToOne(mappedBy = "accommodation")
     private Location location;
 
+    @OneToOne(mappedBy = "accommodation")
+    private Vacancy vacancy;
+
     @ManyToOne
     private User user;
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "accommodation")
     private List<Room> roomList;
-
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "accommodation")
-    private List<Vacancy> vacancyList;
 }

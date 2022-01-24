@@ -6,6 +6,7 @@ import com.example.gradlebnbadminapi.model.enumClass.IsPrivate;
 import com.example.gradlebnbadminapi.model.enumClass.IsSetUpForGuest;
 import com.example.gradlebnbadminapi.model.network.Header;
 import com.example.gradlebnbadminapi.model.network.request.BedApiRequest;
+import com.example.gradlebnbadminapi.model.network.request.BedListApiRequest;
 import com.example.gradlebnbadminapi.model.network.request.RoomApiRequest;
 import com.example.gradlebnbadminapi.model.network.response.*;
 import com.example.gradlebnbadminapi.repository.*;
@@ -24,6 +25,8 @@ import java.util.stream.Collectors;
 @Service
 @Slf4j
 public class RoomApiLogicServiceImpl implements RoomApiLogicService {
+
+    private static final int PUBLIC_BED = 0;
 
     @Autowired
     private UserRepository userRepository;
@@ -49,6 +52,9 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
     @Autowired
     private VacancyRepository vacancyRepository;
 
+    @Autowired
+    private BathroomRepository bathroomRepository;
+
     @Override
     @Transactional(rollbackFor = {Exception.class})
     public Header create(Header<RoomApiRequest> request) throws Exception {
@@ -61,10 +67,10 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
             saveLocation(roomApiRequest, storedAccommodation);
             saveVacancy(roomApiRequest, storedAccommodation);
 
-            Room storedRoom = saveRoom(roomApiRequest, storedAccommodation);
-            savePrivateBed(roomApiRequest, storedRoom);
-            savePublicBed(roomApiRequest, storedRoom);
-            saveAmenities(roomApiRequest, storedRoom);
+            List<Room> storedRoomList = savePrivateRoomBed(roomApiRequest, storedAccommodation);
+            savePublicSpaceBed(roomApiRequest);
+            saveBathroom(roomApiRequest, storedRoomList);
+            saveAmenities(roomApiRequest, storedRoomList);
         } catch (DataAccessException e) {
             log.warn("Database Error: " + e);
             return Header.ERROR("Database Error.");
@@ -99,8 +105,10 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
                 .title(roomApiRequest.getTitle())
                 .largeBuildingType(roomApiRequest.getLargeBuildingType())
                 .buildingType(roomApiRequest.getBuildingType())
+                .roomType(roomApiRequest.getRoomType())
+                .roomCount(roomApiRequest.getBedroomCount())
                 .maximumGuestCount(roomApiRequest.getMaximumGuestCount())
-                .count(roomApiRequest.getBedroomCount())
+                .isSetUpForGuest(roomApiRequest.getIsSetUpForGuest() ? IsSetUpForGuest.YES : IsSetUpForGuest.NO)
                 .description(roomApiRequest.getDescription())
                 .user(user)
                 .build();
@@ -108,7 +116,7 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
         return accommodationRepository.save(accommodation);
     }
 
-    private Conveniences saveConveniences(RoomApiRequest roomApiRequest, Accommodation accommodation) {
+    private void saveConveniences(RoomApiRequest roomApiRequest, Accommodation accommodation) {
         log.info("Conveniences builder.");
 
         Conveniences conveniences = Conveniences.builder()
@@ -122,10 +130,10 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
                 .build();
 
         log.info("Conveniences save: " + conveniences);
-        return conveniencesRepository.save(conveniences);
+        conveniencesRepository.save(conveniences);
     }
 
-    private Location saveLocation(RoomApiRequest roomApiRequest, Accommodation accommodation) {
+    private void saveLocation(RoomApiRequest roomApiRequest, Accommodation accommodation) {
         log.info("Location builder.");
 
         Location location = Location.builder()
@@ -141,10 +149,10 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
                 .build();
 
         log.info("Location save: " + location);
-        return locationRepository.save(location);
+        locationRepository.save(location);
     }
 
-    private Vacancy saveVacancy(RoomApiRequest roomApiRequest, Accommodation accommodation) {
+    private void saveVacancy(RoomApiRequest roomApiRequest, Accommodation accommodation) {
         log.info("Vacancy builder.");
 
         Vacancy vacancy = Vacancy.builder()
@@ -155,50 +163,45 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
                 .build();
 
         log.info("Vacancy save: " + vacancy);
-        return vacancyRepository.save(vacancy);
+        vacancyRepository.save(vacancy);
     }
 
-    private Room saveRoom(RoomApiRequest roomApiRequest, Accommodation accommodation) {
-        log.info("Room builder.");
-
-        Room room = Room.builder()
-                .type(roomApiRequest.getRoomType())
-                .isSetUpForGuest(roomApiRequest.getIsSetUpForGuest() ? IsSetUpForGuest.YES : IsSetUpForGuest.NO)
-                .bathroomCount(roomApiRequest.getBathroomCount())
-                .bathroomType(roomApiRequest.getBathroomType())
-                .accommodation(accommodation)
-                .build();
-
-        log.info("Bed save: " + room);
-        return roomRepository.save(room);
-    }
-
-    private List<Bed> savePrivateBed(RoomApiRequest roomApiRequest, Room room) {
+    private List<Room> savePrivateRoomBed(RoomApiRequest roomApiRequest, Accommodation accommodation) {
         log.info("Private bed builder.");
 
-        List<BedApiRequest> bedList = roomApiRequest.getBedList().stream()
-                .flatMap(beds -> beds.getBeds().stream())
-                .collect(Collectors.toList());
+        List<BedListApiRequest> reqBedList = roomApiRequest.getBedList();
 
-        return bedList.stream().map(privateBed -> {
-            Bed bed = Bed.builder()
+        return reqBedList.stream().map(beds -> {
+            Room room = Room.builder()
+                    .number(Math.toIntExact((Long) beds.getId()))
+                    .accommodation(accommodation)
+                    .build();
+            roomRepository.save(room);
+
+            beds.getBeds().forEach(privateBed -> {
+                Bed newBed = Bed.builder()
                     .type(privateBed.getType())
                     .count(privateBed.getCount())
                     .isPrivate(IsPrivate.Yes)
                     .room(room)
                     .build();
 
-            log.info("Private bed save: " + bed);
-            return bedRepository.save(bed);
+                log.info("Private bed save: " + newBed);
+                bedRepository.save(newBed);
+
+            });
+            return room;
         }).collect(Collectors.toList());
     }
 
-    private List<Bed> savePublicBed(RoomApiRequest roomApiRequest, Room room) {
+    private void savePublicSpaceBed(RoomApiRequest roomApiRequest) {
         log.info("Public bed builder");
+
+        Room room = roomRepository.findByNumber(PUBLIC_BED);
 
         List<BedApiRequest> bedList = roomApiRequest.getPublicBedList();
 
-        return bedList.stream().map(publicBed -> {
+        bedList.forEach(publicBed -> {
             Bed bed = Bed.builder()
                     .type(publicBed.getType())
                     .count(publicBed.getCount())
@@ -207,31 +210,48 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
                     .build();
 
             log.info("Public bed save: " + bed);
-            return bedRepository.save(bed);
-        }).collect(Collectors.toList());
+            bedRepository.save(bed);
+        });
     }
 
-    private Amenities saveAmenities(RoomApiRequest roomApiRequest, Room room) {
+    private void saveBathroom(RoomApiRequest roomApiRequest, List<Room> roomList) {
+        log.info("Bathroom builder");
+
+        roomList.forEach(room -> {
+            Bathroom bathroom = Bathroom.builder()
+                    .count(roomApiRequest.getBathroomCount())
+                    .type(roomApiRequest.getBathroomType())
+                    .room(room)
+                    .build();
+
+            log.info("Bathroom save");
+            bathroomRepository.save(bathroom);
+        });
+    }
+
+    private void saveAmenities(RoomApiRequest roomApiRequest, List<Room> roomList) {
         log.info("Amenities builder.");
 
-        Amenities amenities = Amenities.builder()
-                .wifi(roomApiRequest.getAmenities().contains(ConstAmenities.WIFI) ? HasOrNot.HAS : HasOrNot.NOT)
-                .tv(roomApiRequest.getAmenities().contains(ConstAmenities.TV) ? HasOrNot.HAS : HasOrNot.NOT)
-                .heater(roomApiRequest.getAmenities().contains(ConstAmenities.HEATER) ? HasOrNot.HAS : HasOrNot.NOT)
-                .airConditioner(roomApiRequest.getAmenities().contains(ConstAmenities.AIR_CONDITIONER) ? HasOrNot.HAS : HasOrNot.NOT)
-                .iron(roomApiRequest.getAmenities().contains(ConstAmenities.IRON) ? HasOrNot.HAS : HasOrNot.NOT)
-                .shampoo(roomApiRequest.getAmenities().contains(ConstAmenities.SHAMPOO) ? HasOrNot.HAS : HasOrNot.NOT)
-                .hairDryer(roomApiRequest.getAmenities().contains(ConstAmenities.HAIR_DRYER) ? HasOrNot.HAS : HasOrNot.NOT)
-                .breakfast(roomApiRequest.getAmenities().contains(ConstAmenities.BREAKFAST) ? HasOrNot.HAS : HasOrNot.NOT)
-                .businessSpace(roomApiRequest.getAmenities().contains(ConstAmenities.BUSINESS_SPACE) ? HasOrNot.HAS : HasOrNot.NOT)
-                .fireplace(roomApiRequest.getAmenities().contains(ConstAmenities.FIREPLACE) ? HasOrNot.HAS : HasOrNot.NOT)
-                .closet(roomApiRequest.getAmenities().contains(ConstAmenities.CLOSET) ? HasOrNot.HAS : HasOrNot.NOT)
-                .guestEntrance(roomApiRequest.getAmenities().contains(ConstAmenities.GUEST_ENTRANCE) ? HasOrNot.HAS : HasOrNot.NOT)
-                .room(room)
-                .build();
+        roomList.forEach(room -> {
+            Amenities amenities = Amenities.builder()
+                    .wifi(roomApiRequest.getAmenities().contains(ConstAmenities.WIFI) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .tv(roomApiRequest.getAmenities().contains(ConstAmenities.TV) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .heater(roomApiRequest.getAmenities().contains(ConstAmenities.HEATER) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .airConditioner(roomApiRequest.getAmenities().contains(ConstAmenities.AIR_CONDITIONER) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .iron(roomApiRequest.getAmenities().contains(ConstAmenities.IRON) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .shampoo(roomApiRequest.getAmenities().contains(ConstAmenities.SHAMPOO) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .hairDryer(roomApiRequest.getAmenities().contains(ConstAmenities.HAIR_DRYER) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .breakfast(roomApiRequest.getAmenities().contains(ConstAmenities.BREAKFAST) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .businessSpace(roomApiRequest.getAmenities().contains(ConstAmenities.BUSINESS_SPACE) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .fireplace(roomApiRequest.getAmenities().contains(ConstAmenities.FIREPLACE) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .closet(roomApiRequest.getAmenities().contains(ConstAmenities.CLOSET) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .guestEntrance(roomApiRequest.getAmenities().contains(ConstAmenities.GUEST_ENTRANCE) ? HasOrNot.HAS : HasOrNot.NOT)
+                    .room(room)
+                    .build();
 
-        log.info("Amenities save: " + amenities);
-        return amenitiesRepository.save(amenities);
+            log.info("Amenities save: " + amenities);
+            amenitiesRepository.save(amenities);
+        });
     }
 
     private AccommodationApiResponse response(Accommodation accommodation) {
@@ -278,11 +298,6 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
 
 
             return RoomApiResponse.builder()
-                    .roomType(room.getType())
-                    .bedroomCount(room.getCount())
-                    .isSetUpForGuest("YES".equals(room.getIsSetUpForGuest().getTitle()))
-                    .bathroomCount(room.getBathroomCount())
-                    .bathroomType(room.getBathroomType())
                     .bedList(bedList)
                     .publicBedList(publicBedList)
                     .amenities(getAmenitiesList(amenitiesApiResponse))
@@ -301,13 +316,7 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
                 .jacuzzi("HAS".equals(conveniences.getJacuzzi().getTitle()))
                 .build();
 
-        List<VacancyApiResponse> vacancyApiResponses = accommodation.getVacancyList().stream()
-                .map(vacancy -> VacancyApiResponse.builder()
-                    .price(vacancy.getPrice())
-                    .startDate(vacancy.getStartDate())
-                    .endDate(vacancy.getEndDate())
-                    .build())
-                .collect(Collectors.toList());
+        Vacancy vacancy = accommodation.getVacancy();
 
         List<PhotoApiResponse> photoApiResponseList = accommodation.getUser().getPhotoList().stream()
                 .map(photo -> PhotoApiResponse.builder()
@@ -322,8 +331,7 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
                 .buildingType(accommodation.getBuildingType())
                 .maximumGuestCount(accommodation.getMaximumGuestCount())
                 .description(accommodation.getDescription())
-                .bedroomCount(accommodation.getCount())
-                .
+                .bedroomCount(accommodation.getRoomCount())
                 .latitude(location.getLatitude())
                 .longitude(location.getLongitude())
                 .country(location.getCountry())
@@ -332,17 +340,19 @@ public class RoomApiLogicServiceImpl implements RoomApiLogicService {
                 .streetAddress(location.getStreetAddress())
                 .detailAddress(location.getDetailAddress())
                 .postcode(location.getPostcode())
-//                .conveniences(conveniencesApiResponse)
-//                .vacancyList(vacancyApiResponses)
-//                .photoList(photoApiResponseList)
+                .conveniences(getAmenitiesList(conveniencesApiResponse))
+                .price(vacancy.getPrice())
+                .startDate(vacancy.getStartDate())
+                .endDate(vacancy.getEndDate())
+                .photos(photoApiResponseList)
                 .created_at(accommodation.getCreatedAt())
                 .updated_at(accommodation.getUpdatedAt())
                 .build();
     }
 
-    public List<String> getAmenitiesList(AmenitiesApiResponse amenities) {
+    public List<String> getAmenitiesList(Object object) {
         ObjectMapper objectMapper = new ObjectMapper();
-        HashMap<String, Boolean> result = objectMapper.convertValue(amenities, HashMap.class);
-        return result.entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).collect(Collectors.toList());;
+        HashMap<String, Boolean> result = objectMapper.convertValue(object, HashMap.class);
+        return result.entrySet().stream().filter(Map.Entry::getValue).map(Map.Entry::getKey).collect(Collectors.toList());
     }
 }
