@@ -13,4 +13,16 @@ public final class ConstConveniences {
     public static final String SWIMMING_POOL = "Swimming Pool";
 
     public static final String JACUZZI = "Jacuzzi";
+
+    public static final String KEY_KITCHEN = "kitchen";
+
+    public static final String KEY_LAUNDRY_ROOM = "laundryRoom";
+
+    public static final String KEY_PARKING_LOT = "parkingLot";
+
+    public static final String KEY_GYM = "gym";
+
+    public static final String KEY_SWIMMING_POOL = "swimmingPool";
+
+    public static final String KEY_JACUZZI = "jacuzzi";
 }

@@ -7,8 +7,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum IsSetUpForGuest {
 
-    YES(0, "YES"),
-    NO(1, "NO");
+    NO(0, "NO"),
+    YES(1, "YES");
 
     private final Integer id;
     private final String title;

@@ -1,5 +1,6 @@
 package com.example.gradlebnbadminapi.model.network.response;
 
+import com.example.gradlebnbadminapi.model.entity.User;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -32,9 +33,9 @@ public class AccommodationApiResponse {
     // private List<RoomApiResponse> roomList;
     private String roomType;
 
-    private boolean isSetUpForGuest;
+    private Boolean isSetUpForGuest;
 
-    private int bedroomCount;
+    private String bedroomCount;
 
     private List<BedListApiResponse> bedList;
 
@@ -43,6 +44,9 @@ public class AccommodationApiResponse {
     private BigDecimal bathroomCount;
 
     private String bathroomType;
+
+    // amenities
+    private List<String> amenities;
 
     // Location
     private String country;
@@ -61,8 +65,6 @@ public class AccommodationApiResponse {
 
     private int longitude;
 
-    private List<String> amenities;
-
     // conveniences
     private List<String> conveniences;
 
@@ -80,4 +82,6 @@ public class AccommodationApiResponse {
     private LocalDateTime created_at;
 
     private LocalDateTime updated_at;
+
+    private UserApiResponse user;
 }

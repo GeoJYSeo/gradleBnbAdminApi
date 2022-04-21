@@ -65,7 +65,8 @@ public class HandlingS3 {
         String photoName = makePhotoName(Objects.requireNonNull(mpPhoto.getOriginalFilename()));
         log.info("Upload photo name: " + photoName);
 
-        upload(mpPhoto, photoName);
+        File photo = upload(mpPhoto, photoName);
+        removeNewFile(photo);
 
         String S3Url = getS3Photo(photoName);
         log.info("S3Url: " + S3Url);
@@ -107,7 +108,7 @@ public class HandlingS3 {
         });
     }
 
-    public void upload(MultipartFile mpPhoto, String photoName) throws Exception {
+    public File upload(MultipartFile mpPhoto, String photoName) throws Exception {
         log.info("Photo: " + mpPhoto);
 
         try {
@@ -115,6 +116,8 @@ public class HandlingS3 {
 
             s3Client.putObject(new PutObjectRequest(bucket, photoName, photo)
                     .withCannedAcl(CannedAccessControlList.PublicRead));
+
+            return photo;
         } catch (IOException e) {
             log.error(e.getMessage());
             log.error("File convert error");
@@ -125,6 +128,15 @@ public class HandlingS3 {
             throw new Exception();
         }
     }
+
+    private void removeNewFile(File targetFile) {
+        if (targetFile.delete()) {
+            log.info("File Deleted.");
+        } else {
+            log.info("Deleting file error.");
+        }
+    }
+
 
     @PostConstruct
     public void setS3Client() {

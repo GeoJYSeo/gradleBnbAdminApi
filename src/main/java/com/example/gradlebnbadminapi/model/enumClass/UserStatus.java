@@ -7,8 +7,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum UserStatus {
 
-    ACTIVATED(0, "ACTIVATED"),
-    DELETE_PENDING(1, "DELETE_PENDING"),
+    DELETE_PENDING(0, "DELETE_PENDING"),
+    ACTIVATED(1, "ACTIVATED"),
     DELETED(9, "DELETED");
 
     private final Integer id;

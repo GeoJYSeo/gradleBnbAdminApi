@@ -1,6 +1,8 @@
 package com.example.gradlebnbadminapi.model.entity;
 
 import com.example.gradlebnbadminapi.model.enumClass.HasOrNot;
+import com.example.gradlebnbadminapi.model.network.response.ConveniencesApiResponse;
+import constant.ConstCommon;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,6 +12,7 @@ import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -55,8 +58,20 @@ public class Conveniences {
     @CreatedDate
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     @OneToOne
     private Accommodation accommodation;
+
+    public static ConveniencesApiResponse makeResponse(Conveniences conveniences) {
+        return ConveniencesApiResponse.builder()
+                .kitchen(ConstCommon.HAS.equals(conveniences.getKitchen().getTitle()))
+                .laundryRoom(ConstCommon.HAS.equals(conveniences.getLaundryRoom().getTitle()))
+                .parkingLot(ConstCommon.HAS.equals(conveniences.getParkingLot().getTitle()))
+                .gym(ConstCommon.HAS.equals(conveniences.getGym().getTitle()))
+                .swimmingPool(ConstCommon.HAS.equals(conveniences.getSwimmingPool().getTitle()))
+                .jacuzzi(ConstCommon.HAS.equals(conveniences.getJacuzzi().getTitle()))
+                .build();
+    }
 }

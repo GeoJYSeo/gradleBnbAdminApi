@@ -6,6 +6,7 @@ import lombok.experimental.Accessors;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -23,7 +24,7 @@ import java.util.List;
 @DynamicUpdate
 @Accessors(chain = true)
 @EntityListeners(AuditingEntityListener.class)
-@ToString(exclude = {"conveniences", "location", "roomList", "vacancyList"})
+@ToString(exclude = {"conveniences", "location", "vacancy", "bathroom", "amenities", "roomList", "user"})
 public class Accommodation {
 //    `id` BIGINT NOT NULL AUTO_INCREMENT,
 //    `title` VARCHAR(100) NOT NULL,
@@ -52,12 +53,12 @@ public class Accommodation {
     private String roomType;
 
     @NotNull
+    private int roomCount;
+
+    @NotNull
     private int maximumGuestCount;
 
     private IsSetUpForGuest isSetUpForGuest;
-
-    @NotNull
-    private int roomCount;
 
     @NotBlank
     private String description;
@@ -65,6 +66,7 @@ public class Accommodation {
     @CreatedDate
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     @OneToOne(mappedBy = "accommodation")
@@ -75,6 +77,12 @@ public class Accommodation {
 
     @OneToOne(mappedBy = "accommodation")
     private Vacancy vacancy;
+
+    @OneToOne(mappedBy = "accommodation")
+    private Bathroom bathroom;
+
+    @OneToOne(mappedBy = "accommodation")
+    private Amenities amenities;
 
     @ManyToOne
     private User user;

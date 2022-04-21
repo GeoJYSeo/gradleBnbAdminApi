@@ -1,15 +1,19 @@
 package com.example.gradlebnbadminapi.model.entity;
 
 import com.example.gradlebnbadminapi.model.enumClass.PhotoDeleteFlag;
+import com.example.gradlebnbadminapi.model.network.response.PhotoApiResponse;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Data
 @Builder
@@ -47,8 +51,17 @@ public class Photo {
     @CreatedDate
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     private LocalDateTime UpdatedAt;
 
     @ManyToOne
     private User user;
+
+    public static List<PhotoApiResponse> makeResponse(List<Photo> photoList) {
+        return photoList.stream().map(photo -> PhotoApiResponse.builder()
+                        .id(photo.getId())
+                        .url(photo.getUrl())
+                        .build())
+                .collect(Collectors.toList());
+    }
 }

@@ -1,6 +1,8 @@
 package com.example.gradlebnbadminapi.model.entity;
 
 import com.example.gradlebnbadminapi.model.enumClass.HasOrNot;
+import com.example.gradlebnbadminapi.model.network.response.AmenitiesApiResponse;
+import constant.ConstCommon;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -10,6 +12,7 @@ import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -74,8 +77,26 @@ public class Amenities {
     @CreatedDate
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     @OneToOne
-    private Room room;
+    private Accommodation accommodation;
+
+    public static AmenitiesApiResponse makeResponse(Amenities amenities) {
+        return AmenitiesApiResponse.builder()
+                .wifi(ConstCommon.HAS.equals(amenities.getWifi().getTitle()))
+                .tv(ConstCommon.HAS.equals(amenities.getTv().getTitle()))
+                .heater(ConstCommon.HAS.equals(amenities.getHeater().getTitle()))
+                .airConditioner(ConstCommon.HAS.equals(amenities.getAirConditioner().getTitle()))
+                .iron(ConstCommon.HAS.equals(amenities.getIron().getTitle()))
+                .shampoo(ConstCommon.HAS.equals(amenities.getShampoo().getTitle()))
+                .hairDryer(ConstCommon.HAS.equals(amenities.getHairDryer().getTitle()))
+                .breakfast(ConstCommon.HAS.equals(amenities.getBreakfast().getTitle()))
+                .businessSpace(ConstCommon.HAS.equals(amenities.getBusinessSpace().getTitle()))
+                .fireplace(ConstCommon.HAS.equals(amenities.getFireplace().getTitle()))
+                .closet(ConstCommon.HAS.equals(amenities.getCloset().getTitle()))
+                .guestEntrance(ConstCommon.HAS.equals(amenities.getGuestEntrance().getTitle()))
+                .build();
+    }
 }

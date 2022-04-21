@@ -1,8 +1,12 @@
 package com.example.gradlebnbadminapi.service;
 
+import com.example.gradlebnbadminapi.model.entity.Accommodation;
+import com.example.gradlebnbadminapi.model.entity.Location;
+import com.example.gradlebnbadminapi.model.network.request.AccommodationApiRequest;
+import com.example.gradlebnbadminapi.repository.LocationRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,8 +19,8 @@ import java.nio.charset.StandardCharsets;
 
 import static java.net.http.HttpResponse.BodyHandlers.ofString;
 
-@Slf4j
 @Service
+@Slf4j
 public class LocationApiLogicServiceImpl implements LocationApiLogicService {
 
     @Value("${gcp.geo.key}")
@@ -27,6 +31,9 @@ public class LocationApiLogicServiceImpl implements LocationApiLogicService {
 
     @Value("${gcp.place.url}")
     private String placeUrl;
+
+    @Autowired
+    private LocationRepository locationRepository;
 
     @Override
     public String getLocation(String latitude, String longitude) throws Exception {
@@ -85,5 +92,45 @@ public class LocationApiLogicServiceImpl implements LocationApiLogicService {
         HttpRequest request = HttpRequest.newBuilder().uri(URI.create(reqUrl)).build();
 
         return client.send(request, ofString());
+    }
+
+    @Override
+    @Transactional(rollbackFor = {Exception.class})
+    public void create(AccommodationApiRequest accommodationApiRequest, Accommodation accommodation) throws Exception {
+        log.info("Location builder.");
+
+        Location location = Location.builder()
+                .latitude(accommodationApiRequest.getLatitude())
+                .longitude(accommodationApiRequest.getLongitude())
+                .country(accommodationApiRequest.getCountry())
+                .state(accommodationApiRequest.getState())
+                .city(accommodationApiRequest.getCity())
+                .streetAddress(accommodationApiRequest.getStreetAddress())
+                .detailAddress(accommodationApiRequest.getDetailAddress())
+                .postcode(accommodationApiRequest.getPostcode())
+                .accommodation(accommodation)
+                .build();
+
+        log.info("Location save: " + location);
+        locationRepository.save(location);
+    }
+
+    @Override
+    @Transactional(rollbackFor = {Exception.class})
+    public void put(AccommodationApiRequest accommodationApiRequest, Accommodation accommodation) throws Exception {
+        log.info("Modify Location.");
+
+        Location modifyLocation = accommodation.getLocation()
+                .setLatitude(accommodationApiRequest.getLatitude())
+                .setLongitude(accommodationApiRequest.getLongitude())
+                .setCountry(accommodationApiRequest.getCountry())
+                .setState(accommodationApiRequest.getState())
+                .setCity(accommodationApiRequest.getCity())
+                .setStreetAddress(accommodationApiRequest.getStreetAddress())
+                .setDetailAddress(accommodationApiRequest.getDetailAddress())
+                .setPostcode(accommodationApiRequest.getPostcode());
+
+        log.info("Location modify: " + modifyLocation);
+        locationRepository.save(modifyLocation);
     }
 }

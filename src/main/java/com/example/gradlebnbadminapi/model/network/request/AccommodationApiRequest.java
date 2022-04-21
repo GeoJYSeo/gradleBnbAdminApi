@@ -5,7 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import javax.validation.constraints.NotBlank;
 import java.math.BigDecimal;
 import java.util.List;
 
@@ -13,7 +12,10 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class RoomApiRequest {
+public class AccommodationApiRequest {
+
+    private Long id;
+
     private String email;
 
     // Accommodation
@@ -30,7 +32,7 @@ public class RoomApiRequest {
     // Room
     private String roomType;
 
-    private int bedroomCount;
+    private int roomCount;
 
     private Boolean isSetUpForGuest;
 
@@ -72,4 +74,6 @@ public class RoomApiRequest {
     private String startDate;
 
     private String endDate;
+
+
 }

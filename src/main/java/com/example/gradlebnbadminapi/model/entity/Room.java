@@ -8,6 +8,7 @@ import org.hibernate.annotations.DynamicUpdate;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -24,7 +25,7 @@ import java.util.List;
 @DynamicUpdate
 @Accessors(chain = true)
 @EntityListeners(AuditingEntityListener.class)
-@ToString(exclude = {"amenities", "bedList"})
+@ToString(exclude = {"bedList"})
 public class Room {
 //    `id` BIGINT NOT NULL AUTO_INCREMENT,
 //    `number` INT NOT NULL,
@@ -34,7 +35,7 @@ public class Room {
 //    `bathroom_type` VARCHAR(50) NOT NULL,
 //    `created_at` DATETIME NOT NULL,
 //    `updated_at` DATETIME NULL,
-//    `accommdation_id` BIGINT NOT NULL,
+//    `accommodation_id` BIGINT NOT NULL,
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -46,17 +47,12 @@ public class Room {
     @CreatedDate
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     @ManyToOne
     private Accommodation accommodation;
 
-    @OneToMany(fetch = FetchType.LAZY, mappedBy = "room")
+    @OneToMany(fetch = FetchType.LAZY, cascade = CascadeType.REMOVE, mappedBy = "room")
     private List<Bed> bedList;
-
-    @OneToOne(mappedBy = "room")
-    private Bathroom bathroom;
-
-    @OneToOne(mappedBy = "room")
-    private Amenities amenities;
 }

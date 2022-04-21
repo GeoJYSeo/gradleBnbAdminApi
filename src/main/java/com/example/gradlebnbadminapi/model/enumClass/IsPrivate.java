@@ -7,8 +7,8 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum IsPrivate {
 
-    Yes(0, "YES"),
-    NO(1, "NO");
+    NO(0, "NO"),
+    Yes(1, "YES");
 
     private final Integer id;
     private final String title;

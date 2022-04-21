@@ -1,12 +1,19 @@
 package com.example.gradlebnbadminapi.model.entity;
 
 import com.example.gradlebnbadminapi.model.enumClass.IsPrivate;
+import com.example.gradlebnbadminapi.model.network.response.BedApiResponse;
+import com.example.gradlebnbadminapi.model.network.response.BedListApiResponse;
+import constant.ConstCommon;
 import lombok.*;
 import lombok.experimental.Accessors;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import javax.persistence.*;
@@ -48,8 +55,34 @@ public class Bed {
     @CreatedDate
     private LocalDateTime createdAt;
 
+    @LastModifiedDate
     private LocalDateTime updatedAt;
 
     @ManyToOne
     private Room room;
+
+    public static BedListApiResponse makeResponse(Room room, String isPrivate) {
+        System.out.println("------------------------------------");
+        System.out.println(room.getId());
+        System.out.println("------------------------------------");
+        List<Bed> allBedList = room.getBedList();
+
+        List<BedApiResponse> bedList = allBedList.stream()
+                .filter(bed -> isPrivate.equals(bed.getIsPrivate().getTitle()))
+                .map(privateBed -> BedApiResponse.builder()
+                        .type(privateBed.getType())
+                        .count(privateBed.getCount())
+                        .build())
+                .collect(Collectors.toList());
+
+        return ConstCommon.YES.equals(isPrivate) ?
+                BedListApiResponse.builder()
+                    .id(Math.toIntExact(room.getNumber()))
+                    .beds(bedList)
+                    .build()
+                :
+                BedListApiResponse.builder()
+                    .beds(bedList)
+                    .build();
+    }
 }
